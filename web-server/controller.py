@@ -31,7 +31,7 @@ class WebServer:
         ) if self.args.log.isdecimal() else self.app.logger.setLevel(self.args.log)
 
         self.add_routes()
-        
+
         # TODO: Change this to work based on where Flask server starts. Also, use the actual ip address
         ### self.sserv.base_url = request.remote_addr
 
@@ -48,7 +48,7 @@ class WebServer:
             given a cookie to see if the video is done periodically
             """
             video_file = request.files.get("file")
-            
+
             # TODO: UUID4 is cryptographically secure on CPython, but this is not guaranteed in the specifications.
             # Might want to change this.
             # TODO: Don't assume videos are in mp4 format
@@ -56,13 +56,17 @@ class WebServer:
             if(uuid is None):
                 response = make_response("ERROR")
                 response.headers['Access-Control-Allow-Origin'] = '*'
+                response.headers['Access-Control-Request-Method'] = 'POST'
+                response.headers['Access-Control-Request-Headers'] = 'Content-Type'
                 return response
-            
+
             # TODO: now pass to nerf/tensorf/colmap/sfm, and decide if synchronous or asynchronous
             # will we use a db for cookies/ids?
-                
+
             response = make_response(uuid)
             response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Request-Method'] = 'POST'
+            response.headers['Access-Control-Request-Headers'] = 'Content-Type'
 
             return response
 
@@ -78,9 +82,9 @@ class WebServer:
             except Exception as e:
                 print(e)
                 response = make_response("Error: does not exist")
-           
+
             return response
-            
+
         @self.app.route("/nerfvideo/<vidid>", methods=["GET"])
         def send_nerf_video(vidid: str):
             ospath = None
@@ -93,7 +97,7 @@ class WebServer:
             else:
                 status_str = "Video ready"
                 response = make_response(send_file(ospath, as_attachment=True))
-                
+
             response.headers['Access-Control-Allow-Origin'] = '*'
             return response
 
@@ -102,10 +106,10 @@ class WebServer:
             # serves data directory for workers to pull any local data
             # TODO make this access secure
             return send_from_directory('data',path[5:])
-            
+
         @self.app.route("/login", methods=["GET"])
         def login_user():
-            #get username and password from login 
+            #get username and password from login
             #use get_user_by_username and compare the password retrieved from that to the password given by the login
             #if they match allow the user to login, otherwise, fail
 
@@ -163,6 +167,5 @@ class WebServer:
 
         @self.app.route("/test")
         def test_endpoint():
-            
-            return "Success!"
 
+            return "Success!"

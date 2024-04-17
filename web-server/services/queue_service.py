@@ -26,7 +26,7 @@ class RabbitMQService:
         credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))
         parameters = pika.ConnectionParameters(rabbitmq_domain, 5672, '/', credentials, heartbeat=300)
         self.queue_manager = manager
-        
+
         #2 minute timer
         timeout = time.time() + 60 * 2
 
@@ -35,8 +35,8 @@ class RabbitMQService:
             if time.time() > timeout:
                 raise Exception("RabbitMQService, _init_, took too long to connect to rabbitmq")
             try:
-                self.connection = pika.BlockingConnection(parameters)  
-                self.channel = self.connection.channel() 
+                self.connection = pika.BlockingConnection(parameters)
+                self.channel = self.connection.channel()
                 self.channel.queue_declare(queue='sfm-in')
                 self.channel.queue_declare(queue='nerf-in')
                 break
@@ -50,7 +50,7 @@ class RabbitMQService:
         # for queue list positions
 
     def to_url(self,file_path):
-        return self.base_url+"/worker-data/"+file_path
+        return self.base_url+"worker-data/"+file_path
 
     #
     def publish_sfm_job(self, id: str, vid: Video ):
@@ -66,7 +66,7 @@ class RabbitMQService:
         # add to sfm_list and queue_list (first received, goes into overarching queue) queue manager
         self.queue_manager.append_queue("sfm_list",id)
         self.queue_manager.append_queue("queue_list",id)
-           
+
     def publish_nerf_job(self, id: str, vid: Video, sfm: Sfm):
         """
             publish_nerf_job publishes a new job to the nerf-in que hosted on RabbitMQ
@@ -84,7 +84,7 @@ class RabbitMQService:
             file_path = frame["file_path"]
             file_url = self.to_url(file_path)
             sfm_data["frames"][i]["file_path"] = file_url
-        
+
         combined_job = {**job, **sfm_data}
         json_job = json.dumps(combined_job)
         self.channel.basic_publish(exchange='', routing_key='nerf-in', body=json_job)
@@ -106,7 +106,7 @@ def find_elbow_point(data, max_k=35):
     wcss = []
 
     # Set a maximum limit for computational efficiency
-    max_k = min(len(data), max_k)  
+    max_k = min(len(data), max_k)
 
     # Check if max_k is very large
     max_k = max(max_k, math.floor(math.sqrt(len(data))))
@@ -117,13 +117,13 @@ def find_elbow_point(data, max_k=35):
         kmeans.fit(data)
         wcss.append(kmeans.inertia_)
 
-    # Fill in x values for elbow function 
+    # Fill in x values for elbow function
     x = range(1, len(wcss)+1)
 
     # Determine Elbow point of graph
     #TODO: fix this
     #elbow = kneed.KneeLocator(x, wcss, curve = 'convex', direction='decreasing')
-    
+
     # Returns elbow point (along with x and y values for graph testing)
     #return elbow.knee, x, wcss
 
@@ -178,7 +178,7 @@ def k_mean_sampling(frames, size=100):
 
         # Extract data points belonging to the current cluster
         cluster_data = np.array([angles[i] for i in cluster_indices])
-        
+
         # Calculate the centroid of the current cluster
         centroid = centroids[idx]
 
@@ -187,7 +187,7 @@ def k_mean_sampling(frames, size=100):
 
         # Find the index of the closest frame within the current cluster
         closest_frame_index = cluster_indices[np.argmin(distances)]
-        
+
         # Append the index of the closest frame to the list
         closest_frames.append(closest_frame_index)
 
@@ -201,7 +201,7 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
         id = sfm_data['id']
 
         #convert each url to filepath
-        #store png 
+        #store png
         for i,fr_ in enumerate(sfm_data['frames']):
             # TODO: This code trusts the file extensions from the worker
             # TODO: handle files not found
@@ -209,14 +209,14 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
             img = requests.get(url)
             url_path = urlparse(fr_['file_path']).path
             filename = url_path.split("/")[-1]
-            file_path =  "data/sfm/" + id 
-            os.makedirs(file_path, exist_ok=True) 
+            file_path =  "data/sfm/" + id
+            os.makedirs(file_path, exist_ok=True)
             file_path += "/" + filename
             open(file_path,"wb").write(img.content)
 
             path = os.path.join(os.getcwd(), file_path)
             sfm_data['frames'][i]["file_path"] = file_path
-        
+
         # Get indexes of k mean grouped frames
         k_sampled = k_mean_sampling(sfm_data)
 
@@ -271,7 +271,7 @@ def digest_finished_nerfs(rabbitip,scene_manager: SceneManager, queue_manager: Q
     def process_nerf_job(ch,method,properties,body):
         nerf_data = json.loads(body.decode())
         video = requests.get(nerf_data['rendered_video_path'])
-        filepath = "data/nerf/" 
+        filepath = "data/nerf/"
         os.mkdir(filepath, exist_ok=True)
         filepath = os.path.join(filepath,+f"{id}.mp4" )
         open(filepath,"wb").write(video.content)
@@ -286,7 +286,7 @@ def digest_finished_nerfs(rabbitip,scene_manager: SceneManager, queue_manager: Q
         #remove video from nerf_list and queue_list (end of full process) queue manager
         queue_manager.pop_queue("nerf_list",id)
         queue_manager.pop_queue("queue_list",id)
-    
+
     # create unique connection to rabbitmq since pika is NOT thread safe
     rabbitmq_domain = rabbitip
     credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))
@@ -315,4 +315,3 @@ def digest_finished_nerfs(rabbitip,scene_manager: SceneManager, queue_manager: Q
                 break
         except pika.exceptions.AMQPConnectionError:
             continue
-        

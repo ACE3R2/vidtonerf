@@ -12,7 +12,7 @@ class ClientService:
     def __init__(self, manager: SceneManager, rmqservice: RabbitMQService):
         self.manager = manager
         self.rmqservice = rmqservice
-        
+
     def handle_incoming_video(self, video_file):
         # receive video and check for validity
         file_name = secure_filename(video_file.filename)
@@ -31,7 +31,8 @@ class ClientService:
         videos_folder = "data/raw/videos"
         current_directory = os.getcwd()
 
-        video_file_path = os.path.join(current_directory, videos_folder)
+        #video_file_path = os.path.join(current_directory, videos_folder)
+        video_file_path = videos_folder
         if not os.path.exists(video_file_path):
             # If the path does not exist, create it
             os.makedirs(video_file_path)
@@ -56,4 +57,3 @@ class ClientService:
         if nerf:
             return ("Video ready", nerf.rendered_video_path)
         return None
-        

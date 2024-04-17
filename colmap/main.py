@@ -81,7 +81,7 @@ def colmap_worker():
     Path(f"{input_data_dir}").mkdir(parents=True, exist_ok=True)
     Path(f"{output_data_dir}").mkdir(parents=True, exist_ok=True)
 
-    
+
     rabbitmq_domain = "rabbitmq"
     credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))
     parameters = pika.ConnectionParameters(
@@ -104,7 +104,7 @@ def colmap_worker():
         video = requests.get(job_data["file_path"], timeout=10)
         print("Web server pinged")
         video_file_path = f"{input_data_dir}{id}.mp4"
-        print("Saving video to: {video_file_path}")
+        print(f"Saving video to: {video_file_path}")
         open(video_file_path, "wb").write(video.content)
         print("Video downloaded")
 

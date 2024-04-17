@@ -1,7 +1,6 @@
 import unittest
 import scene
-import os
-from dotenv import load_dotenv
+
 
 class userManagerTest(unittest.TestCase):
     def setUp(self):                            #fires before the test starts
@@ -69,17 +68,6 @@ class userManagerTest(unittest.TestCase):
         self.assertTrue(user2==1)
 
 
-class environmentTest(unittest.TestCase):
-    def setUp(self):                            #fires before the test starts
-        load_dotenv()
-
-    def test_environment(self):
-        print("Username:", os.getenv("RABBITMQ_DEFAULT_USER"))
-        print("Password: ", os.getenv("MONGO_INITDB_ROOT_PASSWORD"))
-        assert("admin" == os.getenv("RABBITMQ_DEFAULT_USER") == os.getenv("MONGO_INITDB_ROOT_USERNAME"))
-        assert("password123" == os.getenv("RABBITMQ_DEFAULT_PASS") == os.getenv("MONGO_INITDB_ROOT_PASSWORD"))
-        assert("mongodb" == os.getenv("MONGO_IP"))
-        assert("rabbitmq" == os.getenv("RABBITMQ_IP"))
 
 
 class queueListManagerTest(unittest.TestCase):
@@ -97,7 +85,7 @@ class queueListManagerTest(unittest.TestCase):
         self.queue_manager.append_queue("nerf_list","uuid3")
 
         self.queue_manager.append_queue("queue_list","uuid4")
-        
+
         ret=self.queue_manager.get_queue_position("sfm_list","uuid2")
         print("uuid2 is in sfm_list position {} out of {}.".format(ret[0],ret[1]))
         self.assertTrue(ret[0] == 1 and ret[1] == 4)

@@ -8,10 +8,7 @@ from flask import url_for
 import time
 import os
 from dotenv import load_dotenv
-import numpy as np
-import math
-import random
-import sklearn.cluster
+
 
 
 # Load environment variables from .env file at the root of the project
@@ -23,7 +20,7 @@ class RabbitMQService:
     # TODO: Communicate with rabbitmq server on port defined in web-server arguments
     def __init__(self, rabbitip, manager):
         rabbitmq_domain = rabbitip
-        credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))
+        credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
         parameters = pika.ConnectionParameters(rabbitmq_domain, 5672, '/', credentials, heartbeat=300)
         self.queue_manager = manager
 
@@ -127,73 +124,9 @@ def find_elbow_point(data, max_k=35):
     # Returns elbow point (along with x and y values for graph testing)
     #return elbow.knee, x, wcss
 
-def k_mean_sampling(frames, size=100):
-    CLUSTERS = size
 
-    extrins = []
-    angles = []
-    for f in frames["frames"]:
-        extrinsic = np.array(f["extrinsic_matrix"])
-        extrins+=[ extrinsic ]
-    for i,e in enumerate(extrins):
 
-        # t == rectangular coordinates
-        t = e[0:3,3]
-
-        # s == spherical coordinates
-
-        # r = sqrt(x^2 + y^2 + z^2)
-        r = math.sqrt((t[0]*t[0])+(t[1]*t[1])+(t[2]*t[2]))
-        theta = math.acos(t[2]/r)
-        phi = math.atan(t[1]/t[0])
-
-        #convert radian to degrees
-
-        theta = (theta * 180) / math.pi
-        phi = (phi * 180) / math.pi
-
-        s = [theta,phi]
-
-        angles.append(s)
-
-    #elbow_point, _, _ = find_elbow_point(angles)
-    elbow_point = 10
-    km = sklearn.cluster.Kmeans(n_clusters=elbow_point, n_init=10)
-    km.fit(angles)
-
-    labels = km.labels
-    if (len(set(labels)) != elbow_point):
-        print("Error with clustering")
-
-    cluster_array = [ [] for _ in range(elbow_point) ]
-
-    for i in range(len(angles)):
-        cluster_array[labels[i]].append(i)
-
-    centroids = km.cluster_centers_
-    closest_frames = []
-
-    # Find the frame closest to each centroid in each cluster
-    for idx, cluster_indices in enumerate(cluster_array):
-
-        # Extract data points belonging to the current cluster
-        cluster_data = np.array([angles[i] for i in cluster_indices])
-
-        # Calculate the centroid of the current cluster
-        centroid = centroids[idx]
-
-        # Calculate the distances between each data point and the centroid
-        distances = np.linalg.norm(cluster_data - centroid, axis=1)
-
-        # Find the index of the closest frame within the current cluster
-        closest_frame_index = cluster_indices[np.argmin(distances)]
-
-        # Append the index of the closest frame to the list
-        closest_frames.append(closest_frame_index)
-
-    return closest_frames
-
-def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: QueueListManager, rmq_service : RabbitMQService):
+def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: QueueListManager):
 
     def process_sfm_job(ch,method,properties,body):
         #load queue object
@@ -217,11 +150,8 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
             path = os.path.join(os.getcwd(), file_path)
             sfm_data['frames'][i]["file_path"] = file_path
 
-        # Get indexes of k mean grouped frames
-        k_sampled = k_mean_sampling(sfm_data)
 
-        # Use those frames to revise list of frames used in sfm generation
-        sfm_data['frames'] = [sfm_data['frames'][i] for i in k_sampled]
+
 
         #call SceneManager to store to database
         vid = Video.from_dict(sfm_data)
@@ -290,7 +220,7 @@ def digest_finished_nerfs(rabbitip,scene_manager: SceneManager, queue_manager: Q
 
     # create unique connection to rabbitmq since pika is NOT thread safe
     rabbitmq_domain = rabbitip
-    credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))
+    credentials = pika.PlainCredentials(os.getenv("RABBITMQ_DEFAULT_USER"), os.getenv("RABBITMQ_DEFAULT_PASS"))
     parameters = pika.ConnectionParameters(rabbitmq_domain, 5672, '/', credentials,heartbeat=300)
 
     #2 minute timer

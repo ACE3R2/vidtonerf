@@ -30,7 +30,7 @@ def main():
     # Load environmental
     load_dotenv()
 
-    rabbitip = str(os.getenv("RABBITMQ_IP"))
+    rabbitip = os.getenv("RABBITMQ_IP")
     flaskip = ipdata["flaskdomain"]
 
     # Shared Database manager <from models>
@@ -44,7 +44,7 @@ def main():
     rmq_service = RabbitMQService(rabbitip, queue_man)
 
     # Starting async operations to pull finished jobs from rabbitmq <from services>
-    sfm_output_thread = threading.Thread(target=digest_finished_sfms, args=(rabbitip,scene_man,queue_man, rmq_service))
+    sfm_output_thread = threading.Thread(target=digest_finished_sfms, args=(rabbitip,scene_man,queue_man))
     nerf_output_thread = threading.Thread(target=digest_finished_nerfs, args=(rabbitip,scene_man,queue_man))
     sfm_output_thread.start()
     nerf_output_thread.start()

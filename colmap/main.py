@@ -14,6 +14,7 @@ from multiprocessing import Process
 import os
 import argparse
 import sys
+from dotenv import load_dotenv
 
 
 app = Flask(__name__)
@@ -81,6 +82,8 @@ def colmap_worker():
     Path(f"{input_data_dir}").mkdir(parents=True, exist_ok=True)
     Path(f"{output_data_dir}").mkdir(parents=True, exist_ok=True)
 
+
+    load_dotenv()
 
     rabbitmq_domain = "rabbitmq"
     credentials = pika.PlainCredentials(str(os.getenv("RABBITMQ_DEFAULT_USER")), str(os.getenv("RABBITMQ_DEFAULT_PASS")))

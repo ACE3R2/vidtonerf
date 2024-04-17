@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 def main():
     print("Starting web-app...")
-    
+
     parser = create_arguments()
     args = parser.parse_args()
 
@@ -26,8 +26,8 @@ def main():
     #docker_in.json inside docker container
     #docker_out.json outside docker container
     ipdata = json.load(ipfile)
-    
-    # Load environmental 
+
+    # Load environmental
     load_dotenv()
 
     rabbitip = str(os.getenv("RABBITMQ_IP"))
@@ -39,27 +39,26 @@ def main():
 
     # QueueListManager to manage list positions,shared
     queue_man = QueueListManager()
-    
+
     # Rabbitmq service to post new jobs to the workers <from services>
     rmq_service = RabbitMQService(rabbitip, queue_man)
 
     # Starting async operations to pull finished jobs from rabbitmq <from services>
-    sfm_output_thread = threading.Thread(target=digest_finished_sfms, args=(rabbitip,scene_man,queue_man))
+    sfm_output_thread = threading.Thread(target=digest_finished_sfms, args=(rabbitip,scene_man,queue_man, rmq_service))
     nerf_output_thread = threading.Thread(target=digest_finished_nerfs, args=(rabbitip,scene_man,queue_man))
     sfm_output_thread.start()
     nerf_output_thread.start()
 
     # TODO: async worker to clean up old data
-    
+
     # service to handle all incoming client requests from the controller <from services>
     c_service = ClientService(scene_man, rmq_service)
 
     # start listening to incoming requests on the controller <from controllers>
     server = WebServer(flaskip, args, c_service, queue_man)
 
-    ipfile.close() 
+    ipfile.close()
     server.run()
 
 if __name__ == "__main__":
     main()
-    

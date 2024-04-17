@@ -193,7 +193,7 @@ def k_mean_sampling(frames, size=100):
 
     return closest_frames
 
-def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: QueueListManager):
+def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: QueueListManager, rmq_service : RabbitMQService):
 
     def process_sfm_job(ch,method,properties,body):
         #load queue object
@@ -235,6 +235,7 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
         print("saved finished sfm job", flush=True)
         new_data = json.dumps(sfm_data)
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        rmqservice.publish_nerf_job(id,vid,sfm)
 
     # create unique connection to rabbitmq since pika is NOT thread safe
     rabbitmq_domain = rabbitip

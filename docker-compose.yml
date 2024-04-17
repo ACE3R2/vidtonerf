@@ -4,7 +4,7 @@ services:
     image: mongo:latest
     container_name: mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME} 
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - 27017:27017
@@ -12,7 +12,7 @@ services:
       - mongodb_data_container:/data/db
     networks:
       - backend
-  
+
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3.8-management-alpine
@@ -26,9 +26,9 @@ services:
        - '15672:15672'
     networks:
       - backend
-    
+
   web-server:
-    build: 
+    build:
       context: .
       dockerfile: ./web-server/Dockerfile
     image: web-server-img
@@ -48,7 +48,7 @@ services:
     command: python3 main.py --configip configs/docker_in.json
 
   sfm-worker:
-      build: 
+      build:
         context: .
         dockerfile: ./colmap/Dockerfile
 
@@ -56,14 +56,32 @@ services:
       container_name: sfm-worker
       depends_on:
         - rabbitmq
-      volumes: 
+      volumes:
         - ./colmap:/colmap
 
-      ports: 
+      ports:
         - 5100:5100
       networks:
-        - backend 
+        - backend
       command: python3.10 main.py --config=configs/default.txt
+
+ gaussian-splatting:
+      build:
+        context: .
+        dockerfile: ./gaussian-splatting/Dockerfile
+
+      image: gaussian-splatting-img
+      container_name: gaussian-splatting
+      depends_on:
+        - rabbitmq
+      volumes:
+        - ./gaussian-splatting:/gaussian-splatting
+
+      ports:
+        - 5200:5200
+      networks:
+        - backend
+      #command:
 
 networks:
   backend:

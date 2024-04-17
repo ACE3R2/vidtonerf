@@ -12,6 +12,7 @@ import numpy as np
 import math
 import random
 import sklearn
+import sklearn.cluster
 
 
 
@@ -183,7 +184,7 @@ def k_mean_sampling(frames, size=100):
     return return_array
 
 
-def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: QueueListManager):
+def digest_finished_sfms(rabbitip, rmqservice: RabbitMQService, scene_manager: SceneManager, queue_manager: QueueListManager):
 
     def process_sfm_job(ch,method,properties,body):
         #load queue object
@@ -208,7 +209,8 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
             sfm_data['frames'][i]["file_path"] = file_path
 
         # Get indexes of k mean grouped frames
-        k_sampled = k_mean_sampling(sfm_data)
+        #k_sampled = k_mean_sampling(sfm_data)
+        k_sampled = range(len(sfm_data['frames']))
 
         # Use those frames to revise list of frames used in sfm generation
         sfm_data['frames'] = [sfm_data['frames'][i] for i in k_sampled]

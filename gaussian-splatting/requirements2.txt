@@ -1,0 +1,2 @@
+gaussian-splatting/submodules/diff-gaussian-rasterization
+gaussian-splatting/submodules/simple-knn

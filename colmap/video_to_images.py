@@ -34,7 +34,7 @@ from random import sample
 #    of the video at video_path. Samples wanted_frames amount of frames,
 #    or 200 frames by default
 #
-#returns a status code - 
+#returns a status code -
 #    0 = Success
 #    1 = Unspecified error
 #    2 = FileExistsError; happens when you try to create data in an already existing folder
@@ -73,6 +73,10 @@ def split_video_into_frames(video_path, output_path, max_frames=200):
   sample_count = min(frame_count,max_frames)
   print("SAMPLE COUNT:", sample_count)
 
+  # Fail if there are no images to sample
+  if sample_count == 0:
+      return 1
+
   #print(f"frames = {frame_count}")
 
   success, image = vidcap.read()
@@ -89,58 +93,45 @@ def split_video_into_frames(video_path, output_path, max_frames=200):
 
   vidcap.release()
   sorted_list = sorted(blur_list)
-  ## we want the remaining best images
-  ## e.g, if we want 75 images out of 100, threshold should be 25th image
-  threshold_img = len(blur_list) - sample_count
-  THRESHOLD = sorted_list[threshold_img]
 
-  ## checks number of images within the threshold
-  count_good_img = 0
-  for i in blur_list:
-    if i >= THRESHOLD:
-      count_good_img += 1
 
-  ## account for not enough images in threshold so that we return the exact number of images
-  if count_good_img > sample_count:
-    for i in range(count_good_img - sample_count):
-      for val in blur_list:
-        if val >= THRESHOLD:
-          val = 0
-          break
-       
 
-  ## If this threshold is too low, completely reject video 
-  avg_threshold = (sorted_list[-1] + THRESHOLD)/2
-  if avg_threshold < 100:
+  avg_saved_blurriness = sorted_list[(int)(sample_count/2)]
+  highest_saved_blurriness = sorted_list[sample_count-1]
+
+  # Artificially high value to allow images through
+  # TODO: change to more reasonable rejecting value
+  max_average_blurriness = 99999
+
+  # If average blurriness of the saved images is too high, reject
+  if avg_saved_blurriness > max_average_blurriness:
     # ERROR: Video is too blurry. Please try again.
     return 4
-  
+
 
   needs_adjust = False ## determines if we need to adjust
   aspect_ratio = img_height / img_width
   #print (f"aspect ratio: {aspect_ratio}")
   #print (f"img_width: {img_width}")
   #print (f"img_height: {img_height}")
-  ## adjust as necessaryx 
-  MAX_WIDTH = 200 
+  ## adjust as necessary
+  MAX_WIDTH = 200
   MAX_HEIGHT = 200
 
   ## for resizing images
   if (img_height > MAX_HEIGHT):
     scaler = MAX_HEIGHT / img_height
-    img_height = (int) (img_height * scaler)
+    img_height = img_height * scaler
+    # Adjust width as well to maintain aspect ratio
+    img_width = img_height * scaler
     needs_adjust = True
 
   if (img_width > MAX_WIDTH):
     scaler = MAX_WIDTH / img_width
-    img_width = (int) (scaler * img_width)
+    img_width = img_width * scaler
+    # Adjust height as well to maintain aspect ratio
+    img_height = img_height * scaler
     needs_adjust = True
-  
-  ## applying aspect ratio
-  if (aspect_ratio > 1):
-    img_width = (int) (img_width / aspect_ratio)
-  else:
-    img_height = (int) (img_height * aspect_ratio)
 
   #print(f"new img height: {img_height}")
   #print(f"new img width: {img_width}")
@@ -153,13 +144,13 @@ def split_video_into_frames(video_path, output_path, max_frames=200):
   vidcap = cv2.VideoCapture(video_path)
   success, image = vidcap.read()
   while success:
-    if (blur_list[count] >= THRESHOLD):
+    if blur_list[count] <= highest_saved_blurriness:
       if (needs_adjust == True):
         image = cv2.resize(image, dimensions, interpolation=cv2.INTER_LANCZOS4)
-      cv2.imwrite(f"{output_path}/img_{count}.png", image)  
+      cv2.imwrite(f"{output_path}/img_{count}.png", image)
       print('Saved image ', count)
     success, image = vidcap.read()
-    
+
     count += 1
   vidcap.release()
 
@@ -204,7 +195,7 @@ if __name__ == '__main__':
                 case _:
                     print("ERROR: Unrecognized flag", sys.argv[i])
                     quit()"""
-    
+
     #Calling split_video_into_frames
     status = split_video_into_frames(instance_name, output_path, ffmpeg_path, video_path, wanted_frames=200)
     if status == 0:

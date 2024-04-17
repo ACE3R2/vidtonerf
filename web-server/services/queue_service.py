@@ -232,7 +232,7 @@ def digest_finished_sfms(rabbitip, scene_manager: SceneManager, queue_manager: Q
         #remove video from sfm_list queue manager
         queue_manager.pop_queue("sfm_list",id)
 
-        print("saved finished sfm job")
+        print("saved finished sfm job", flush=True)
         new_data = json.dumps(sfm_data)
         ch.basic_ack(delivery_tag=method.delivery_tag)
 

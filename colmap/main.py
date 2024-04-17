@@ -46,7 +46,7 @@ def run_full_sfm_pipeline(id, video_file_path, input_data_dir, output_data_dir):
 
     # (1) vid_to_images.py
     imgs_folder = os.path.join(output_path, "imgs")
-    print(video_file_path)
+    print(video_file_path, flush=True)
 
     split_video_into_frames(video_file_path, imgs_folder, 100)
     # imgs are now in output_data_dir/id
@@ -55,9 +55,9 @@ def run_full_sfm_pipeline(id, video_file_path, input_data_dir, output_data_dir):
     colmap_path = "/usr/local/bin/colmap"
     status = run_colmap(colmap_path, imgs_folder, output_path)
     if status == 0:
-        print("COLMAP ran successfully.")
+        print("COLMAP ran successfully.", flush=True)
     elif status == 1:
-        print("ERROR: There was an unknown error running COLMAP")
+        print("ERROR: There was an unknown error running COLMAP", flush=True)
 
     # (3) matrix.py
     initial_motion_path = os.path.join(output_path, "images.txt")
@@ -94,19 +94,19 @@ def colmap_worker():
     channel.queue_declare(queue="sfm-out")
 
     def process_colmap_job(ch, method, properties, body):
-        print("Starting New Job")
-        print(body.decode())
+        print("Starting New Job", flush=True)
+        print(body.decode(), flush=True)
         job_data = json.loads(body.decode())
         id = job_data["id"]
-        print(f"Running New Job With ID: {id}")
+        print(f"Running New Job With ID: {id}", flush=True)
 
         # TODO: Handle exceptions and enable steaming to make safer
         video = requests.get(job_data["file_path"], timeout=10)
-        print("Web server pinged")
+        print("Web server pinged", flush=True)
         video_file_path = f"{input_data_dir}{id}.mp4"
-        print(f"Saving video to: {video_file_path}")
+        print(f"Saving video to: {video_file_path}", flush=True)
         open(video_file_path, "wb").write(video.content)
-        print("Video downloaded")
+        print("Video downloaded", flush=True)
 
         # RUNS COLMAP AND CONVERSION CODE
         motion_data, imgs_folder = run_full_sfm_pipeline(
@@ -127,15 +127,15 @@ def colmap_worker():
 
         # confirm to rabbitmq job is done
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        print("Job complete")
+        print("Job complete", flush=True)
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue="sfm-in", on_message_callback=process_colmap_job)
     channel.start_consuming()
-    print("should not get here")
+    print("should not get here", flush=True)
 
 if __name__ == "__main__":
-    print("~SFM WORKER~")
+    print("~SFM WORKER~", flush=True)
     input_data_dir = "data/inputs/"
     output_data_dir = "data/outputs/"
     Path(f"{input_data_dir}").mkdir(parents=True, exist_ok=True)

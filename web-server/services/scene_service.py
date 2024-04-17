@@ -17,12 +17,12 @@ class ClientService:
         # receive video and check for validity
         file_name = secure_filename(video_file.filename)
         if file_name == '':
-            print("ERROR: file not received")
+            print("ERROR: file not received", flush=True)
             return None
 
         file_ext = os.path.splitext(file_name)[1]
         if file_ext != ".mp4":
-            print("ERROR: improper file extension uploaded")
+            print("ERROR: improper file extension uploaded", flush=True)
             return None
 
         # generate new id and save to file with db record
